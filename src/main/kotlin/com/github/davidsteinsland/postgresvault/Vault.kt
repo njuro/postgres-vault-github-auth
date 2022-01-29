@@ -16,6 +16,7 @@ internal class Vault {
             "/bin",
             "/usr/sbin",
             "/sbin",
+            "/opt/homebrew/bin",
             System.getProperty("user.home") + "/bin"
         )
 
