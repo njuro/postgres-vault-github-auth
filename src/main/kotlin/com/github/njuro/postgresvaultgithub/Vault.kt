@@ -1,4 +1,4 @@
-package com.github.davidsteinsland.postgresvault
+package com.github.njuro.postgresvaultgithub
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -27,18 +27,18 @@ internal class Vault {
                 ?: exec
     }
 
-    fun readJson(path: String): ObjectNode {
-        authenticate()
-        return executeAndReturnJson(vaultExec, "read", "-format=json", path)
+    fun readJson(path: String, address: String, token: String): ObjectNode {
+        authenticate(address, token)
+        return executeAndReturnJson(vaultExec, "read", "-address=$address", "-format=json", path)
     }
 
-    private fun authenticate() {
-        if (isAuthenticated()) return
-        executeAndReturnJson(vaultExec, "login", "-method=oidc", "-format=json")
+    private fun authenticate(address: String, token: String) {
+        if (isAuthenticated(address)) return
+        executeAndReturnJson(vaultExec, "login", "-address=$address", "-method=github", "-format=json", "token=$token")
     }
 
-    private fun isAuthenticated(): Boolean =
-        execute(vaultExec, "token", "lookup") {
+    private fun isAuthenticated(address: String): Boolean =
+        execute(vaultExec, "token", "lookup", "-address=$address") {
             val errorText = it.errorStream.bufferedReader().readText()
             if (it.exitValue() != 0 && !errorText.contains("permission denied")) {
                 throw IOException(VaultBundle.message("authenticationFailed", errorText))

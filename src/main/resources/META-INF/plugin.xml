@@ -1,13 +1,14 @@
 <idea-plugin>
-    <id>com.github.davidsteinsland.postgresvault</id>
-    <name>PostgreSQL Vault Auth</name>
-    <vendor>davidsteinsland</vendor>
+    <id>com.github.njuro.postgresvaultgithub</id>
+    <name>PostgreSQL Vault GitHub Auth</name>
+    <vendor>njuro</vendor>
+    <description>Enables fetching database credentials from vault via GitHub token</description>
+
 
     <!-- Product and plugin compatibility requirements -->
     <!-- https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.database</depends>
-
     <extensions defaultExtensionNs="com.intellij.database">
-        <connectionInterceptor implementation="com.github.davidsteinsland.postgresvault.VaultAuth"/>
+        <connectionInterceptor implementation="com.github.njuro.postgresvaultgithub.VaultAuth"/>
     </extensions>
 </idea-plugin>

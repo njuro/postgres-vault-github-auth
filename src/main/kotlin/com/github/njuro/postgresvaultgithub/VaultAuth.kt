@@ -1,4 +1,4 @@
-package com.github.davidsteinsland.postgresvault
+package com.github.njuro.postgresvaultgithub
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.intellij.application.ApplicationThreadPool
@@ -8,13 +8,13 @@ import com.intellij.database.dataSource.DatabaseAuthProvider
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
 import com.intellij.database.dataSource.LocalDataSource
-import com.intellij.database.dataSource.url.JdbcUrlParserUtil
 import com.intellij.database.dataSource.url.template.MutableParametersHolder
 import com.intellij.database.dataSource.url.template.ParametersHolder
 import com.intellij.database.dataSource.url.ui.UrlPropertiesPanel.createLabelConstraints
 import com.intellij.database.dataSource.url.ui.UrlPropertiesPanel.createSimpleConstraints
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
 import com.intellij.uiDesigner.core.GridLayoutManager
 import kotlinx.coroutines.CoroutineName
@@ -25,8 +25,16 @@ import kotlinx.coroutines.future.future
 import java.util.concurrent.CompletionStage
 import javax.swing.JPanel
 
+@Suppress("UnstableApiUsage")
 class VaultAuth : DatabaseAuthProvider, CoroutineScope {
     private val vault = Vault()
+
+    companion object {
+        private const val VAULT_ADDRESS = "vault.address"
+        private const val VAULT_TOKEN = "vault.token"
+        private const val VAULT_PATH = "vault.path"
+    }
+
 
     override val coroutineContext = SupervisorJob() + Dispatchers.ApplicationThreadPool + CoroutineName("VaultAuth")
     override fun getId() = "vault"
@@ -41,16 +49,20 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
         credentials: DatabaseCredentials,
         dataSource: LocalDataSource
     ): DatabaseAuthProvider.AuthWidget {
-        return VaultWidget(dataSource)
+        return VaultWidget()
     }
 
-    override fun intercept(connection: ProtoConnection, silent: Boolean): CompletionStage<ProtoConnection>? {
-        val mountPath = connection.connectionPoint.additionalJdbcProperties["vault.path"]
+    override fun intercept(connection: ProtoConnection, silent: Boolean): CompletionStage<ProtoConnection> {
+        val mountPath = connection.connectionPoint.additionalProperties[VAULT_PATH]
             ?: throw VaultAuthException(VaultBundle.message("invalidMountPath"))
+        val addressPath = connection.connectionPoint.additionalProperties[VAULT_ADDRESS]
+            ?: throw VaultAuthException(VaultBundle.message("invalidAddressPath"))
+        val tokenPath = connection.connectionPoint.additionalProperties[VAULT_TOKEN]
+            ?: throw VaultAuthException(VaultBundle.message("invalidTokenPath"))
 
         return future {
             val json = try {
-                vault.readJson(mountPath)
+                vault.readJson(mountPath, addressPath, tokenPath)
             } catch (err: JsonProcessingException) {
                 throw VaultAuthException(VaultBundle.message("jsonError"), err)
             }
@@ -71,44 +83,40 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
     }
 
     @Suppress("TooManyFunctions", "EmptyFunctionBlock", "MagicNumber")
-    private class VaultWidget(dataSource: LocalDataSource) : DatabaseAuthProvider.AuthWidget {
+    private class VaultWidget : DatabaseAuthProvider.AuthWidget {
+        private val addressField = JBTextField()
+        private val tokenField = JBPasswordField()
         private val pathField = JBTextField()
-        private val panel = JPanel(GridLayoutManager(1, 6)).apply {
+        private val panel = JPanel(GridLayoutManager(3, 6)).apply {
+            val addressLabel = JBLabel(VaultBundle.message("addressLabel"))
+            add(addressLabel, createLabelConstraints(0, 0, addressLabel.preferredSize.getWidth()))
+            add(addressField, createSimpleConstraints(0, 1, 3))
+
+            val tokenLabel = JBLabel(VaultBundle.message("tokenLabel"))
+            add(tokenLabel, createLabelConstraints(1, 0, tokenLabel.preferredSize.getWidth()))
+            add(tokenField, createSimpleConstraints(1, 1, 3))
+
             val pathLabel = JBLabel(VaultBundle.message("pathLabel"))
-            add(pathLabel, createLabelConstraints(0, 0, pathLabel.preferredSize.getWidth()))
-            add(pathField, createSimpleConstraints(0, 1, 3))
-
-            // dataSource
-            val parser = JdbcUrlParserUtil.parsed(
-                dataSource.connectionConfig,
-                dataSource.url
-            )!!
-
-            val host = parser.getParameter("host") ?: return@apply
-            val db = parser.getParameter("database") ?: return@apply
-            determineMountPath(host, db)
+            add(pathLabel, createLabelConstraints(2, 0, pathLabel.preferredSize.getWidth()))
+            add(pathField, createSimpleConstraints(2, 1, 3))
         }
 
         override fun save(dataSource: LocalDataSource, copyCredentials: Boolean) {
-            dataSource.additionalJdbcProperties["vault.path"] = pathField.text
+            dataSource.additionalProperties[VAULT_PATH] = pathField.text
+            dataSource.additionalProperties[VAULT_ADDRESS] = addressField.text
+            dataSource.additionalProperties[VAULT_TOKEN] = tokenField.password.toString()
         }
 
         override fun reset(dataSource: LocalDataSource, copyCredentials: Boolean) {
-            pathField.text = (dataSource.additionalJdbcProperties["vault.path"] ?: "")
+            pathField.text = (dataSource.additionalProperties[VAULT_PATH] ?: "")
+            addressField.text = (dataSource.additionalProperties[VAULT_ADDRESS] ?: "")
+            tokenField.text = (dataSource.additionalProperties[VAULT_TOKEN] ?: "")
         }
 
-        override fun updateFromUrl(holder: ParametersHolder) {
-            val host = holder.getParameter("host") ?: return
-            val database = holder.getParameter("database") ?: return
-            determineMountPath(host, database)
-        }
 
         override fun updateUrl(holder: MutableParametersHolder) {}
 
-        private fun determineMountPath(host: String, database: String) {
-            val cluster = host.contains("prod").takeIf { it }?.let { "prod-fss" } ?: "preprod-fss"
-            pathField.text = "postgresql/$cluster/creds/$database-readonly"
-        }
+        override fun updateFromUrl(p0: ParametersHolder) {}
 
         override fun isPasswordChanged(): Boolean {
             return false
@@ -126,6 +134,7 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
 
         override fun forceSave() {
         }
+
     }
 
     internal class VaultAuthException(msg: String, cause: Throwable? = null) : RuntimeException(msg, cause)
