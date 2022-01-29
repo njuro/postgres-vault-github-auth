@@ -104,7 +104,7 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
         override fun save(dataSource: LocalDataSource, copyCredentials: Boolean) {
             dataSource.additionalProperties[VAULT_PATH] = pathField.text
             dataSource.additionalProperties[VAULT_ADDRESS] = addressField.text
-            dataSource.additionalProperties[VAULT_TOKEN] = tokenField.password.toString()
+            dataSource.additionalProperties[VAULT_TOKEN] = String(tokenField.password)
         }
 
         override fun reset(dataSource: LocalDataSource, copyCredentials: Boolean) {

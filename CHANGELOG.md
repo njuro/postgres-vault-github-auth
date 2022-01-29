@@ -2,7 +2,14 @@
 
 # PostgreSQL Vault GitHub Auth Changelog
 
+## [1.1.1]
+
+### Fixed
+
+- Fixed authentication issue
+
 ## [1.1.0]
+
 ### Added
 
 - Initial version created from [PostgreSQL Vault Auth](https://github.com/davidsteinsland/postgres-vault-auth) (see its

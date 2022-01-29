@@ -33,21 +33,8 @@ internal class Vault {
     }
 
     private fun authenticate(address: String, token: String) {
-        if (isAuthenticated(address)) return
         executeAndReturnJson(vaultExec, "login", "-address=$address", "-method=github", "-format=json", "token=$token")
     }
-
-    private fun isAuthenticated(address: String): Boolean =
-        execute(vaultExec, "token", "lookup", "-address=$address") {
-            val errorText = it.errorStream.bufferedReader().readText()
-            if (it.exitValue() != 0 && !errorText.contains("permission denied")) {
-                throw IOException(VaultBundle.message("authenticationFailed", errorText))
-            }
-            it.exitValue() == 0
-        }
-
-    private fun <R> execute(vararg command: String, onSuccess: (Process) -> R) =
-        execute(ProcessBuilder(*command), onSuccess)
 
     private fun executeAndReturnJson(vararg command: String) =
         execute(ProcessBuilder(*command)) {
