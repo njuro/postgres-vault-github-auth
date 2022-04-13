@@ -5,6 +5,7 @@ import com.intellij.application.ApplicationThreadPool
 import com.intellij.credentialStore.Credentials
 import com.intellij.database.access.DatabaseCredentials
 import com.intellij.database.dataSource.DatabaseAuthProvider
+import com.intellij.database.dataSource.DatabaseAuthProvider.ApplicabilityLevel
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
 import com.intellij.database.dataSource.LocalDataSource
@@ -41,7 +42,7 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
 
     override fun getDisplayName() = VaultBundle.message("name")
 
-    override fun isApplicable(dataSource: LocalDataSource) =
+    override fun isApplicable(dataSource: LocalDataSource, applicabilityLevel: ApplicabilityLevel) =
         dataSource.dbms.isPostgres
 
     override fun createWidget(
@@ -100,6 +101,8 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
             add(pathLabel, createLabelConstraints(2, 0, pathLabel.preferredSize.getWidth()))
             add(pathField, createSimpleConstraints(2, 1, 3))
         }
+
+        override fun onChanged(p0: Runnable) {}
 
         override fun save(dataSource: LocalDataSource, copyCredentials: Boolean) {
             dataSource.additionalProperties[VAULT_PATH] = pathField.text
