@@ -5,7 +5,7 @@
 
 Fetches credentials for a PostgreSQL database from Vault.
 
-This plugin assumes that `vault` is installed and available.
+This plugin assumes that `vault` CLI is installed and available.
 
 Authentication against Vault is done via GitHub Personal Access Token with `read:org` permission.
 <!-- Plugin description end -->
