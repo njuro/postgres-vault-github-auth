@@ -1,14 +1,14 @@
 package com.github.njuro.postgresvaultgithub
 
 import com.fasterxml.jackson.core.JsonProcessingException
-import com.intellij.application.ApplicationThreadPool
 import com.intellij.credentialStore.Credentials
 import com.intellij.database.access.DatabaseCredentials
 import com.intellij.database.dataSource.DatabaseAuthProvider
 import com.intellij.database.dataSource.DatabaseAuthProvider.ApplicabilityLevel
+import com.intellij.database.dataSource.DatabaseConnectionConfig
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
+import com.intellij.database.dataSource.DatabaseConnectionPoint
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
-import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.url.template.MutableParametersHolder
 import com.intellij.database.dataSource.url.template.ParametersHolder
 import com.intellij.database.dataSource.url.ui.UrlPropertiesPanel.createLabelConstraints
@@ -37,28 +37,28 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
     }
 
 
-    override val coroutineContext = SupervisorJob() + Dispatchers.ApplicationThreadPool + CoroutineName("VaultAuth")
+    override val coroutineContext = SupervisorJob() + Dispatchers.IO + CoroutineName("VaultAuth")
     override fun getId() = "vault"
 
     override fun getDisplayName() = VaultBundle.message("name")
 
-    override fun isApplicable(dataSource: LocalDataSource, applicabilityLevel: ApplicabilityLevel) =
-        dataSource.dbms.isPostgres
+    override fun getApplicability(
+        point: DatabaseConnectionPoint,
+        level: ApplicabilityLevel
+    ): ApplicabilityLevel.Result = ApplicabilityLevel.Result.APPLICABLE
 
     override fun createWidget(
         project: Project?,
         credentials: DatabaseCredentials,
-        dataSource: LocalDataSource
-    ): DatabaseAuthProvider.AuthWidget {
-        return VaultWidget()
-    }
+        config: DatabaseConnectionConfig
+    ): DatabaseAuthProvider.AuthWidget = VaultWidget()
 
     override fun intercept(connection: ProtoConnection, silent: Boolean): CompletionStage<ProtoConnection> {
-        val mountPath = connection.connectionPoint.additionalProperties[VAULT_PATH]
+        val mountPath = connection.connectionPoint.getAdditionalProperty(VAULT_PATH)
             ?: throw VaultAuthException(VaultBundle.message("invalidMountPath"))
-        val addressPath = connection.connectionPoint.additionalProperties[VAULT_ADDRESS]
+        val addressPath = connection.connectionPoint.getAdditionalProperty(VAULT_ADDRESS)
             ?: throw VaultAuthException(VaultBundle.message("invalidAddressPath"))
-        val tokenPath = connection.connectionPoint.additionalProperties[VAULT_TOKEN]
+        val tokenPath = connection.connectionPoint.getAdditionalProperty(VAULT_TOKEN)
             ?: throw VaultAuthException(VaultBundle.message("invalidTokenPath"))
 
         return future {
@@ -104,39 +104,37 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
 
         override fun onChanged(p0: Runnable) {}
 
-        override fun save(dataSource: LocalDataSource, copyCredentials: Boolean) {
-            dataSource.additionalProperties[VAULT_PATH] = pathField.text
-            dataSource.additionalProperties[VAULT_ADDRESS] = addressField.text
-            dataSource.additionalProperties[VAULT_TOKEN] = String(tokenField.password)
+        override fun save(config: DatabaseConnectionConfig, copyCredentials: Boolean) {
+            with(config.dataSource) {
+                setAdditionalProperty(VAULT_PATH, pathField.text)
+                setAdditionalProperty(VAULT_ADDRESS, addressField.text)
+                setAdditionalProperty(VAULT_TOKEN, String(tokenField.password))
+            }
         }
 
-        override fun reset(dataSource: LocalDataSource, copyCredentials: Boolean) {
-            pathField.text = (dataSource.additionalProperties[VAULT_PATH] ?: "")
-            addressField.text = (dataSource.additionalProperties[VAULT_ADDRESS] ?: "")
-            tokenField.text = (dataSource.additionalProperties[VAULT_TOKEN] ?: "")
+        override fun reset(point: DatabaseConnectionPoint, resetCredentials: Boolean) {
+            with(point.dataSource) {
+                pathField.text = getAdditionalProperty(VAULT_PATH) ?: ""
+                addressField.text = getAdditionalProperty(VAULT_ADDRESS) ?: ""
+                tokenField.text = getAdditionalProperty(VAULT_TOKEN) ?: ""
+            }
         }
-
 
         override fun updateUrl(holder: MutableParametersHolder) {}
 
         override fun updateFromUrl(p0: ParametersHolder) {}
 
-        override fun isPasswordChanged(): Boolean {
-            return false
-        }
+        override fun isPasswordChanged(): Boolean = false
 
-        override fun hidePassword() {
-        }
+        override fun hidePassword() {}
 
-        override fun reloadCredentials() {
-        }
+        override fun reloadCredentials() {}
 
         override fun getComponent() = panel
 
         override fun getPreferredFocusedComponent() = pathField
 
-        override fun forceSave() {
-        }
+        override fun forceSave() {}
 
     }
 
