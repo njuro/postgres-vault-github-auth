@@ -2,6 +2,10 @@
 
 # PostgreSQL Vault GitHub Auth Changelog
 
+## [1.1.5]
+
+- Updated to IntelliJ 2023.1
+
 ## [1.1.4]
 
 - Updated to IntelliJ 2022.3
