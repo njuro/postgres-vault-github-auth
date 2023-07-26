@@ -11,8 +11,6 @@ import com.intellij.database.dataSource.DatabaseConnectionPoint
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
 import com.intellij.database.dataSource.url.template.MutableParametersHolder
 import com.intellij.database.dataSource.url.template.ParametersHolder
-import com.intellij.database.dataSource.url.ui.UrlPropertiesPanel.createLabelConstraints
-import com.intellij.database.dataSource.url.ui.UrlPropertiesPanel.createSimpleConstraints
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPasswordField
