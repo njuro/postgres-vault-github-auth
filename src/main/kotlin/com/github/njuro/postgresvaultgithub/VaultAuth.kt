@@ -51,12 +51,12 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
         config: DatabaseConnectionConfig
     ): DatabaseAuthProvider.AuthWidget = VaultWidget()
 
-    override fun intercept(connection: ProtoConnection, silent: Boolean): CompletionStage<ProtoConnection> {
-        val mountPath = connection.connectionPoint.getAdditionalProperty(VAULT_PATH)
+    override fun intercept(proto: ProtoConnection, silent: Boolean): CompletionStage<ProtoConnection> {
+        val mountPath = proto.connectionPoint.getAdditionalProperty(VAULT_PATH)
             ?: throw VaultAuthException(VaultBundle.message("invalidMountPath"))
-        val addressPath = connection.connectionPoint.getAdditionalProperty(VAULT_ADDRESS)
+        val addressPath = proto.connectionPoint.getAdditionalProperty(VAULT_ADDRESS)
             ?: throw VaultAuthException(VaultBundle.message("invalidAddressPath"))
-        val tokenPath = connection.connectionPoint.getAdditionalProperty(VAULT_TOKEN)
+        val tokenPath = proto.connectionPoint.getAdditionalProperty(VAULT_TOKEN)
             ?: throw VaultAuthException(VaultBundle.message("invalidTokenPath"))
 
         return future {
@@ -74,7 +74,7 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
             }
 
             DatabaseCredentialsAuthProvider.applyCredentials(
-                connection,
+                proto,
                 Credentials(username, password),
                 true
             )
@@ -100,7 +100,7 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
             add(pathField, createSimpleConstraints(2, 1, 3))
         }
 
-        override fun onChanged(p0: Runnable) {}
+        override fun onChanged(r: Runnable) {}
 
         override fun save(config: DatabaseConnectionConfig, copyCredentials: Boolean) {
             with(config.dataSource) {
@@ -118,9 +118,9 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
             }
         }
 
-        override fun updateUrl(holder: MutableParametersHolder) {}
+        override fun updateUrl(model: MutableParametersHolder) {}
 
-        override fun updateFromUrl(p0: ParametersHolder) {}
+        override fun updateFromUrl(holder: ParametersHolder) {}
 
         override fun isPasswordChanged(): Boolean = false
 
