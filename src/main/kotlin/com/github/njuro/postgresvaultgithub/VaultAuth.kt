@@ -51,6 +51,7 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
         config: DatabaseConnectionConfig
     ): DatabaseAuthProvider.AuthWidget = VaultWidget()
 
+    @Deprecated("Use coroutines", replaceWith = ReplaceWith("interceptConnection"))
     override fun intercept(proto: ProtoConnection, silent: Boolean): CompletionStage<ProtoConnection> {
         val mountPath = proto.connectionPoint.getAdditionalProperty(VAULT_PATH)
             ?: throw VaultAuthException(VaultBundle.message("invalidMountPath"))
