@@ -9,6 +9,7 @@ import com.intellij.database.dataSource.DatabaseConnectionConfig
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
 import com.intellij.database.dataSource.DatabaseConnectionPoint
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
+import com.intellij.database.dataSource.ui.AuthWidgetBuilder
 import com.intellij.database.dataSource.url.template.MutableParametersHolder
 import com.intellij.database.dataSource.url.template.ParametersHolder
 import com.intellij.openapi.project.Project
@@ -45,6 +46,7 @@ class VaultAuth : DatabaseAuthProvider, CoroutineScope {
         level: ApplicabilityLevel
     ): ApplicabilityLevel.Result = ApplicabilityLevel.Result.APPLICABLE
 
+    @Deprecated("Use configureWidget() instead")
     override fun createWidget(
         project: Project?,
         credentials: DatabaseCredentials,
