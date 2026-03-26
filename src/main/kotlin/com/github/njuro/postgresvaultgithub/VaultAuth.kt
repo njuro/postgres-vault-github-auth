@@ -37,8 +37,8 @@ class VaultAuth : DatabaseAuthProvider {
         }
 
         private val tokenSerializer = object : AuthWidgetBuilder.Serialiser<OneTimeString> {
-            override fun save(value: OneTimeString, config: DatabaseConnectionConfig, credentials: DatabaseCredentials?) {
-                config.dataSource.setAdditionalProperty(VAULT_TOKEN, value.toString())
+            override fun save(value: OneTimeString?, config: DatabaseConnectionConfig, credentials: DatabaseCredentials?) {
+                config.dataSource.setAdditionalProperty(VAULT_TOKEN, value?.toString() ?: "")
             }
 
             override fun load(point: DatabaseConnectionPoint, credentials: DatabaseCredentials?): OneTimeString {
