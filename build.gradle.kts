@@ -44,7 +44,7 @@ intellijPlatform {
 
         ideaVersion {
             sinceBuild = properties("pluginSinceBuild")
-            untilBuild = properties("pluginUntilBuild")
+            properties("pluginUntilBuild").takeIf { it.isNotEmpty() }?.let { untilBuild = it }
         }
     }
 
@@ -91,7 +91,7 @@ tasks {
     patchPluginXml {
         version = properties("pluginVersion")
         sinceBuild = properties("pluginSinceBuild")
-        untilBuild = properties("pluginUntilBuild")
+        properties("pluginUntilBuild").takeIf { it.isNotEmpty() }?.let { untilBuild = it }
 
         // Extract the <!-- Plugin description --> section from README.md and provide for the plugin's manifest
         pluginDescription.set(
