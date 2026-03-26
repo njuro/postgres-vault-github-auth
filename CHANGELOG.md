@@ -4,9 +4,6 @@
 ## [1.1.14]
 
 - Updated to IntelliJ 2026.1
-- Migrated from deprecated `createWidget()` to `configureWidget()` API
-- Migrated from deprecated `intercept()` to coroutines-based `interceptConnection()`
-- Removed manual widget implementation (`VaultWidget`, `Polyfills.kt`)
 
 ## [1.1.13]
 
