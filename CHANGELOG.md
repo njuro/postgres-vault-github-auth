@@ -1,6 +1,10 @@
 <!-- Keep a Changelog guide -> https://keepachangelog.com -->
 
 # PostgreSQL Vault GitHub Auth Changelog
+## [1.1.15]
+
+- Updated to IntelliJ 2026.2
+
 ## [1.1.14]
 
 - Updated to IntelliJ 2026.1
