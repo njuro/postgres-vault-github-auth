@@ -68,7 +68,14 @@ git tag vX.Y.Z
 git push origin main
 git push origin vX.Y.Z
 ```
-The `release.yml` GitHub Action triggers on tag push and publishes to JetBrains Marketplace.
+
+### 7. Create the GitHub Release Manually
+There is no working release workflow — GitHub Actions never runs in this repo, so the
+release must be created manually and the built plugin zip attached to it:
+```bash
+gh release create vX.Y.Z --title "vX.Y.Z" --notes "- Updated to IntelliJ XXXX.X"
+gh release upload vX.Y.Z build/distributions/postgres-vault-github-auth-X.Y.Z.zip
+```
 
 ## Remaining Deprecation Warnings (as of 2026.1)
 The plugin verifier reports 8 deprecated API usages, but all are inherited interface defaults:
