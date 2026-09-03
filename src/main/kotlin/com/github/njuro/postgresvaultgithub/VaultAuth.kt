@@ -4,16 +4,16 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.intellij.credentialStore.Credentials
 import com.intellij.credentialStore.OneTimeString
 import com.intellij.database.access.DatabaseCredentials
+import com.intellij.database.dataSource.DatabaseAuthParameterBuilderHelper
 import com.intellij.database.dataSource.DatabaseAuthProvider
 import com.intellij.database.dataSource.DatabaseAuthProvider.ApplicabilityLevel
+import com.intellij.database.dataSource.DatabaseAuthProviderParam
 import com.intellij.database.dataSource.DatabaseConnectionConfig
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
 import com.intellij.database.dataSource.DatabaseConnectionPoint
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
-import com.intellij.database.dataSource.ui.AuthWidgetBuilder
 import com.intellij.database.dataSource.url.template.MutableParametersHolder
 import com.intellij.database.dataSource.url.template.ParametersHolder
-import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -26,19 +26,23 @@ class VaultAuth : DatabaseAuthProvider {
         private const val VAULT_TOKEN = "vault.token"
         private const val VAULT_PATH = "vault.path"
 
-        private val noUrlHandler = object : AuthWidgetBuilder.UrlHandler<String> {
+        private val noUrlHandler = object : DatabaseAuthParameterBuilderHelper.UrlHandler<String?> {
             override fun fromUrl(holder: ParametersHolder): String = ""
-            override fun toUrl(value: String, holder: MutableParametersHolder) {}
+            override fun toUrl(v: String?, model: MutableParametersHolder) {}
         }
 
-        private val noPasswordUrlHandler = object : AuthWidgetBuilder.UrlHandler<OneTimeString> {
+        private val noPasswordUrlHandler = object : DatabaseAuthParameterBuilderHelper.UrlHandler<OneTimeString?> {
             override fun fromUrl(holder: ParametersHolder): OneTimeString = OneTimeString("")
-            override fun toUrl(value: OneTimeString, holder: MutableParametersHolder) {}
+            override fun toUrl(v: OneTimeString?, model: MutableParametersHolder) {}
         }
 
-        private val tokenSerializer = object : AuthWidgetBuilder.Serialiser<OneTimeString> {
-            override fun save(value: OneTimeString?, config: DatabaseConnectionConfig, credentials: DatabaseCredentials?) {
-                config.dataSource.setAdditionalProperty(VAULT_TOKEN, value?.toString() ?: "")
+        private val tokenSerializer = object : DatabaseAuthParameterBuilderHelper.Serialiser<OneTimeString?> {
+            override fun save(
+                v: OneTimeString?,
+                config: DatabaseConnectionConfig,
+                credentials: DatabaseCredentials?
+            ) {
+                config.dataSource.setAdditionalProperty(VAULT_TOKEN, v?.toString() ?: "")
             }
 
             override fun load(point: DatabaseConnectionPoint, credentials: DatabaseCredentials?): OneTimeString {
@@ -56,29 +60,27 @@ class VaultAuth : DatabaseAuthProvider {
         level: ApplicabilityLevel
     ): ApplicabilityLevel.Result = ApplicabilityLevel.Result.APPLICABLE
 
-    override fun AuthWidgetBuilder.configureWidget(
-        project: Project?,
-        credentials: DatabaseCredentials,
-        config: DatabaseConnectionConfig
-    ) {
-        this
-            .addTextField(
-                { VaultBundle.message("addressLabel") },
-                AuthWidgetBuilder.additionalPropertySerializer(VAULT_ADDRESS),
-                noUrlHandler
+    override fun getAuthParams(config: DatabaseConnectionConfig): List<DatabaseAuthProviderParam<*>> =
+        DatabaseAuthProviderParam.buildParams {
+            textParam(
+                VAULT_ADDRESS,
+                VaultBundle.message("addressLabel"),
+                serializer = DatabaseAuthParameterBuilderHelper.additionalPropertySerializer(VAULT_ADDRESS),
+                urlHandler = noUrlHandler
             )
-            .addPasswordField(
-                { VaultBundle.message("tokenLabel") },
-                tokenSerializer,
-                false,
-                noPasswordUrlHandler
+            passwordParam(
+                VAULT_TOKEN,
+                VaultBundle.message("tokenLabel"),
+                serializer = tokenSerializer,
+                urlHandler = noPasswordUrlHandler
             )
-            .addTextField(
-                { VaultBundle.message("pathLabel") },
-                AuthWidgetBuilder.additionalPropertySerializer(VAULT_PATH),
-                noUrlHandler
+            textParam(
+                VAULT_PATH,
+                VaultBundle.message("pathLabel"),
+                serializer = DatabaseAuthParameterBuilderHelper.additionalPropertySerializer(VAULT_PATH),
+                urlHandler = noUrlHandler
             )
-    }
+        }
 
     override suspend fun interceptConnection(proto: ProtoConnection, silent: Boolean): Boolean {
         val mountPath = proto.connectionPoint.getAdditionalProperty(VAULT_PATH)

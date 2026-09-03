@@ -40,6 +40,13 @@ Look up the following for the target IntelliJ release:
 - Updated to IntelliJ XXXX.X
 ```
 
+Patch releases (X.Y.1, X.Y.2) can also remove internal APIs. When the plugin stops working after a
+patch update, read `~/Library/Logs/JetBrains/IntelliJIdea<version>/idea*.log` and grep for
+`Cannot create extension (class=com.github.njuro`. The `NoClassDefFoundError` names the removed
+class. Inspect the current API in
+`~/Applications/IntelliJ IDEA.app/Contents/plugins/DatabaseTools/lib/modules/intellij.database.core.impl.jar`
+with `unzip -l` and `javap -p`.
+
 ### 3. Check for API Breaking Changes
 Check https://plugins.jetbrains.com/docs/intellij/api-changes-list-2026.html (update year)
 for breaking changes in database-related APIs:
@@ -77,19 +84,32 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes "- Updated to IntelliJ XXXX.X"
 gh release upload vX.Y.Z build/distributions/postgres-vault-github-auth-X.Y.Z.zip
 ```
 
-## Remaining Deprecation Warnings (as of 2026.1)
-The plugin verifier reports 8 deprecated API usages, but all are inherited interface defaults:
-- `isApplicable(LocalDataSource)` -> inherited bridge method from `DatabaseAuthProvider`; our code uses `getApplicability(DatabaseConnectionPoint)` instead
-- `createWidget()` / `intercept()` -> inherited default delegates; our code uses `configureWidget()` and `interceptConnection()` instead
+## Remaining Deprecation Warnings (as of 2026.2.2)
+The plugin verifier reports 12 deprecated API usages, but all are inherited interface defaults:
+- `isApplicable(LocalDataSource, ApplicabilityLevel)` -> bridge for `getApplicability(DatabaseConnectionPoint, ApplicabilityLevel)`
+- `createWidget(...)` / `intercept(...)` / `loadAuthConfig(...)` / `saveAuthConfig(...)` -> default delegates for the current APIs
 
 These cannot be eliminated from our side - they're default methods in the interface that bridge to the new APIs.
 
 ## API Migration Notes
-- `configureWidget` is a Kotlin extension function: `override fun AuthWidgetBuilder.configureWidget(...)`
+- `getApplicability(DatabaseConnectionPoint, ApplicabilityLevel)` replaces `isApplicable(LocalDataSource)`
 - `interceptConnection` is a suspend function returning `Boolean` (not `ProtoConnection`)
-- `AuthWidgetBuilder.additionalPropertySerializer(key)` handles save/load for text fields stored as additional datasource properties
-- For password fields, use a custom `AuthWidgetBuilder.Serialiser<OneTimeString>` with `OneTimeString(String)` constructor
-- URL handlers: use no-op `AuthWidgetBuilder.UrlHandler` implementations for fields not mapped to JDBC URL parameters
+- Auth fields are declared, not built as Swing widgets: override
+  `getAuthParams(config): List<DatabaseAuthProviderParam<*>>` and return
+  `DatabaseAuthProviderParam.buildParams { textParam(...); passwordParam(...) }`
+- `DatabaseAuthParameterBuilderHelper` holds the field helpers: `additionalPropertySerializer(key)`,
+  `Serialiser<T>`, `UrlHandler<T>`, `CompletionProvider`
+- `buildParams` lambda params are `textParam(id, name, completion, serializer, urlHandler)` and
+  `passwordParam(id, name, serializer, urlHandler)` - the trailing arguments have defaults, so pass them by name
+- Generic type arguments are platform types: `UrlHandler<String?>`, `Serialiser<OneTimeString?>`.
+  Match the supertype parameter names (`v`, `model`) to avoid compiler warnings
+- For fields not mapped to JDBC URL parameters, pass a no-op `UrlHandler`
+
+## Removed APIs
+- `com.intellij.database.dataSource.ui.AuthWidgetBuilder` and its nested `Serialiser`, `UrlHandler`
+  and `configureWidget` extension were deleted in 2026.2.2 (build 262.10315). A plugin that
+  references them fails to load with `NoClassDefFoundError` and the auth method silently
+  disappears from the data source properties. Replacement: `getAuthParams` (see above).
 
 ## Version History Pattern
 IntelliJ version -> build prefix mapping:
@@ -98,3 +118,4 @@ IntelliJ version -> build prefix mapping:
 - 2025.2 -> 252
 - 2025.3 -> 253
 - 2026.1 -> 261
+- 2026.2 -> 262

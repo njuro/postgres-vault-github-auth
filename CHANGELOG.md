@@ -1,6 +1,11 @@
 <!-- Keep a Changelog guide -> https://keepachangelog.com -->
 
 # PostgreSQL Vault GitHub Auth Changelog
+## [1.1.16]
+
+- Updated to IntelliJ 2026.2.2
+- Migrated auth widget configuration to the `getAuthParams` API (`AuthWidgetBuilder` was removed in 2026.2.2)
+
 ## [1.1.15]
 
 - Updated to IntelliJ 2026.2
