@@ -1,13 +1,13 @@
 package com.github.njuro.postgresvaultgithub
 
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.File
 import java.io.IOException
 
 internal class Vault {
     private companion object {
-        private val mapper = jacksonObjectMapper()
+        private val mapper = ObjectMapper()
         private val vaultExec get() = findExecutable("vault")
 
         private val executableSearchPaths = listOf(

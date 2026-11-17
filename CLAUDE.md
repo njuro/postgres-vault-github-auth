@@ -84,7 +84,7 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes "- Updated to IntelliJ XXXX.X"
 gh release upload vX.Y.Z build/distributions/postgres-vault-github-auth-X.Y.Z.zip
 ```
 
-## Remaining Deprecation Warnings (as of 2026.2.2)
+## Remaining Deprecation Warnings (as of 2026.3)
 The plugin verifier reports 12 deprecated API usages, but all are inherited interface defaults:
 - `isApplicable(LocalDataSource, ApplicabilityLevel)` -> bridge for `getApplicability(DatabaseConnectionPoint, ApplicabilityLevel)`
 - `createWidget(...)` / `intercept(...)` / `loadAuthConfig(...)` / `saveAuthConfig(...)` -> default delegates for the current APIs
@@ -110,6 +110,8 @@ These cannot be eliminated from our side - they're default methods in the interf
   and `configureWidget` extension were deleted in 2026.2.2 (build 262.10315). A plugin that
   references them fails to load with `NoClassDefFoundError` and the auth method silently
   disappears from the data source properties. Replacement: `getAuthParams` (see above).
+- `jackson-module-kotlin` (`jacksonObjectMapper`) is not on the 2026.3 (build 263) classpath. Use plain
+  `com.fasterxml.jackson.databind.ObjectMapper`; `jackson-databind` is still bundled.
 
 ## Version History Pattern
 IntelliJ version -> build prefix mapping:
@@ -119,3 +121,4 @@ IntelliJ version -> build prefix mapping:
 - 2025.3 -> 253
 - 2026.1 -> 261
 - 2026.2 -> 262
+- 2026.3 -> 263
